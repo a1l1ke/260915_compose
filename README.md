@@ -356,3 +356,4 @@ sudo docker compose --env-file .env.mysql -f compose-mysql.yml logs db
 ```
 
 - http://13.125.213.126/
+- https://948806325749-ticmxh4e.ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#Instances:sort=tag:Name
