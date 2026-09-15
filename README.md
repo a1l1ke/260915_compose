@@ -96,3 +96,32 @@ aws ec2 authorize-security-group-ingress --group-id "$MY_SG_ID" --protocol tcp -
 aws ec2 describe-security-groups --group-ids "$MY_SG_ID" \
   --query "SecurityGroups[0].IpPermissions[].{Port:FromPort,Cidr:IpRanges[0].CidrIp}" --output table
 ```
+
+---
+
+```sh
+aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=$MY_INSTANCE_NAME" "Name=tag:Owner,Values=$STUDENT_ID" \
+            "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+  --query "Reservations[].Instances[].[InstanceId,InstanceType,State.Name]" --output table
+```
+
+```sh
+export AMI_ID=$(aws ssm get-parameter \
+  --name /aws/service/canonical/ubuntu/server/26.04/stable/current/arm64/hvm/ebs-gp3/ami-id \
+  --query "Parameter.Value" --output text)
+```
+
+```sh
+export INSTANCE_ID=$(aws ec2 run-instances \
+  --image-id "$AMI_ID" --instance-type t4g.small \
+  --key-name "$MY_KEY_NAME" --security-group-ids "$MY_SG_ID" \
+  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$MY_INSTANCE_NAME},{Key=Course,Value=infra-training},{Key=Owner,Value=$STUDENT_ID}]" \
+  --query "Instances[0].InstanceId" --output text)
+echo "인스턴스 ID:$INSTANCE_ID"
+
+#aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+#aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+```
+
+- https://948806325749-ticmxh4e.ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#Instances:v=3;instanceState=running
