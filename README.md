@@ -185,3 +185,74 @@ cat nginx.conf
 # tail nginx.conf
 # tail -n 20 nginx.conf
 ```
+
+---
+
+```sh
+vi .env.aiven
+
+# 스프링부트 jpa 구동을 위해
+SPRING_DATASOURCE_URL=
+SPRING_DATASOURCE_USERNAME=
+SPRING_DATASOURCE_PASSWORD=
+SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+SPRING_DATASOURCE_HIKARI_INITIALIZATIONFAILTIMEOUT=-1
+SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT=30000
+```
+
+- https://console.aiven.io/
+
+```sh
+SPRING_DATASOURCE_URL=jdbc:mysql://mysql-******-dbstore.b.aivencloud.com:******/defaultdb?ssl-mode=REQUIRED
+SPRING_DATASOURCE_USERNAME=avnadmin
+SPRING_DATASOURCE_PASSWORD=AVNS_PG_******
+SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+SPRING_DATASOURCE_HIKARI_INITIALIZATIONFAILTIMEOUT=-1
+SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT=30000
+# esc :wq
+```
+
+```sh
+# compose.yml
+name: aws-3-tier
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # 바인딩 마운트
+    depends_on:
+      - app
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - frontend-net
+  
+  app:
+    # https://github.com/a1l1ke/simple-back-ghcr/pkgs/container/simple-back-ghcr
+    image: ghcr.io/a1l1ke/simple-back-ghcr:latest
+    restart: on-failure
+    # jpa 구동 실패를 대비
+    env_file:
+      - .env.aiven
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+    # depends_on:
+    deploy:
+      resources:
+        limits:
+          memory: 896M
+    networks:
+      - frontend-net
+
+networks:
+  frontend-net:
+
+# esc - :wq
+```
