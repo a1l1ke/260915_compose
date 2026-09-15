@@ -125,3 +125,63 @@ echo "인스턴스 ID:$INSTANCE_ID"
 ```
 
 - https://948806325749-ticmxh4e.ap-northeast-2.console.aws.amazon.com/ec2/home?region=ap-northeast-2#Instances:v=3;instanceState=running
+
+---
+
+```sh
+# 공인 IP 조회
+export PUBLIC_IP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" \
+  --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+echo "공인 IP:$PUBLIC_IP"
+```
+
+```sh
+ssh -i ./"$MY_KEY_NAME".pem -o StrictHostKeyChecking=accept-new ubuntu@"$PUBLIC_IP"
+```
+
+```sh
+uname -m
+free -h | head -2
+```
+
+```sh
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+sudo systemctl is-active docker
+sudo docker --version
+sudo docker compose version
+
+# sudo docker ps
+```
+
+---
+
+```sh
+vi nginx.conf
+
+# i -> INSERT
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://app:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    }
+}
+
+# esc -> :wq -> enter
+cat nginx.conf
+# 기본 10줄
+# head nginx.conf
+# tail nginx.conf
+# tail -n 20 nginx.conf
+```
