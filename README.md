@@ -203,6 +203,7 @@ SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT=30000
 - https://console.aiven.io/
 
 ```sh
+# .env.aiven
 SPRING_DATASOURCE_URL=jdbc:mysql://mysql-******-dbstore.b.aivencloud.com:******/defaultdb?ssl-mode=REQUIRED
 SPRING_DATASOURCE_USERNAME=avnadmin
 SPRING_DATASOURCE_PASSWORD=AVNS_PG_******
@@ -256,3 +257,102 @@ networks:
 
 # esc - :wq
 ```
+
+```dotenv
+# .env.mysql
+MYSQL_DATABASE=mydb
+MYSQL_USER=myuser
+MYSQL_PASSWORD=mypassword
+MYSQL_RANDOM_ROOT_PASSWORD=1
+# spring boot
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_DATASOURCE_HIKARI_INITIALIZATIONFAILTIMEOUT=-1
+SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT=30000
+```
+
+```sh
+curl -fsSL https://gist.githubusercontent.com/a1l1ke/a0adf3e0fe4ca09eae1f567f0e665bfb/raw/2e4760b9f8ec941528d6536b7b8a32a90fd2bc4b/.env.mysql -o .env.mysql
+cat .env.mysql
+```
+
+```sh
+# compose-mysql.yml
+name: aws-3-tier
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # 바인딩 마운트
+    depends_on:
+      - app
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    networks:
+      - frontend-net
+  
+  app:
+    # https://github.com/a1l1ke/simple-back-ghcr/pkgs/container/simple-back-ghcr
+    image: ghcr.io/a1l1ke/simple-back-ghcr:latest
+    restart: on-failure
+    env_file:
+      - .env.mysql
+    environment:
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://db:3306/${MYSQL_DATABASE}"
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 896M
+    networks:
+      - frontend-net
+      - backend-net
+
+  db:
+    image: mysql:8.0
+    restart: always
+    env_file:
+      - .env.mysql
+    command: --innodb-buffer-pool-size=256M
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: "1"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks:
+      - backend-net
+
+networks:
+  frontend-net:
+  backend-net:
+```
+
+```sh
+curl -fsSL https://gist.githubusercontent.com/a1l1ke/de389987097d51893bad5a7320669e64/raw/e315f70615dcdd2ae431f32daf14694182cd4a33/compose-mysql.yml -o compose-mysql.yml
+cat compose-mysql.yml
+sudo docker compose --env-file .env.mysql -f compose-mysql.yml config --quiet && echo "문법 검증"
+```
+
+```sh
+sudo docker compose --env-file .env.mysql -f compose-mysql.yml up -d
+sudo docker compose ps
+sudo docker compose --env-file .env.mysql -f compose-mysql.yml logs db
+```
+
+- http://13.125.213.126/
