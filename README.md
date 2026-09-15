@@ -31,3 +31,23 @@ ls -l ./"$MY_KEY_NAME".pem
 ```
 
 ---
+
+```sh
+aws sts get-caller-identity
+```
+
+```sh
+aws configure sso --profile "${STUDENT_ID}"
+# SSO session name: infra-training
+# SSO start URL: https://infra-lab-ai.awsapps.com/start
+# SSO region: ap-northeast-2
+# SSO registration scopes: sso:account:access
+
+# CLI default client Region: ap-northeast-2
+# CLI default output format: json
+# CLI profile name: studentXX
+```
+
+```sh
+aws sso login --profile "${STUDENT_ID}"
+```
